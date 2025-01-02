@@ -8,14 +8,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\HARRINGTON.TTF" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\HARRINGTON.TTF">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="SFML.Audio" Version="2.6.0" />
     <PackageReference Include="SFML.Graphics" Version="2.6.0" />
     <PackageReference Include="SFML.System" Version="2.6.0" />
     <PackageReference Include="SFML.Window" Version="2.6.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Resources\" />
   </ItemGroup>
 
 </Project>

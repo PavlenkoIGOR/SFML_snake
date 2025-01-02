@@ -1,46 +1,47 @@
 ﻿using SFML.Graphics;
 using SFML.System;
-using System.Xml.Linq;
-using System;
-using SFML_snake.Snake;
 
 namespace SFML_snake
 {
-    internal class Food : Element
+    internal class Food
     {
-        Random _rnd;
-        //RenderWindow _rw;
-        internal Food(int xx, int yy) : base(xx, yy)
+        private Random random;
+
+        internal List<Vector2f> coords;
+        internal CircleShape FoodShape { get; private set; }
+        
+        public Food(List<Vector2f> coords)
         {
-            _rnd = new Random();
-            //_rw = rw;
-            shape.Position = new SFML.System.Vector2f(xx, yy);
-            shape.Radius = 12.0f;
-            shape.FillColor = Color.Red;
+            this.coords = coords;
+            random = new Random();
+            FoodShape = new CircleShape();
+            FoodShape.Radius = 10.0f;
+            FoodShape.FillColor = Color.Red;
+            Random rnd = new Random();
+            FoodShape.Position = coords[rnd.Next(coords.Count)];
         }
-        internal void FoodSpawn(/*float foodX, float foodY*/RenderWindow _rw, HashSet<float[]> coords, List<Element> snake)
+        public void Respawn(List<Vector2f> snakeBody, List<Vector2f> coords)
         {
-            int rndX, rndY;
-            Vector2f foodPosition;
-            bool validPosition;
+            Vector2f newPosition;
+            bool isInSnake;
+
             do
             {
-                rndX = _rnd.Next(0 + (int)shape.Radius / 2, (int)(_rw.Size.X - shape.Radius / 2));
-                rndY = _rnd.Next(0 + (int)shape.Radius / 2, (int)(_rw.Size.Y - shape.Radius / 2));
-                foodPosition = new Vector2f(rndX, rndY);
-                validPosition = !snake.Any(segment => segment.shape.Position == foodPosition);
-            } while (!validPosition);
+                int x = random.Next(0, coords.Count);
+                newPosition = coords[x];
 
-            shape.Position = new SFML.System.Vector2f(rndX, rndY);
-            _rw.Draw(shape);
-        }
-        internal void CheckCollision(RenderWindow _rw, HashSet<float[]> coords, List<Element>snake)
-        {
-            if (((SnakeHead)snake[0]).shape.GetGlobalBounds().Intersects(shape.GetGlobalBounds()))
-            {
-                FoodSpawn(_rw, coords, snake);
-                Console.WriteLine("collide");
-            }
+                isInSnake = false;
+                foreach (var bodyPart in snakeBody)
+                {
+                    if (bodyPart == newPosition)
+                    {
+                        isInSnake = true;
+                        break;
+                    }
+                }
+            } while (isInSnake);
+
+            FoodShape.Position = newPosition;
         }
     }
 }

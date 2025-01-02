@@ -1,169 +1,135 @@
 ﻿using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
-using SFML_snake.Snake;
-using System.Xml.Linq;
-using System;
+using SFML_snake.SnakeLogic;
+using System.Diagnostics;
 
 namespace SFML_snake
 {
     internal class Program
     {
-        internal enum Directions
+        private static RenderWindow window;
+        private static Snake snake;
+        private static Food food;
+        private static Clock clock;
+        private static float elapsedTime;
+        private static float speed = 400.0f;
+        private static List<Vector2f> coord = new List<Vector2f>();
+        private static TextScores textController ;
+        private static RestartBttn restartBttn;
+        private static int scores = 0;
+        private static int record = 0;
+
+        private static void Main(string[] args)
         {
-            Right,
-            Left,
-            Up,
-            Down
-        }
+            // Инициализация окна
+            window = new RenderWindow(new VideoMode(600, 400), "Snake Game");
+            window.Closed += (sender, e) => window.Close();
+            textController = new TextScores(window);
 
-        static (uint, uint) wndSize = (800, 600);
-        static string wndTitle = "Snake";
+            // Инициализация змейки и еды
+            snake = new Snake(110, 110);
+            restartBttn = new RestartBttn(window, "Restart", new Vector2f(window.Size.X - 180, 320), new Vector2f(170, 40));
+            restartBttn._onClick = RestartGame; // метод перезапуска на действие кнопки
 
-        static uint scores = default;
-        static uint maxScores = default;
-        static uint lastMaxScores = default;
-        static bool isLose = false;
-        static Directions direction = default;
-
-        static RenderWindow rw = new RenderWindow(new VideoMode(wndSize.Item1, wndSize.Item2), "wndTitle");
-        static SnakeHead snakeHead = new SnakeHead(playerX, playerY);
-        static Food food = new Food(foodX, foodY);
-        static SnakeForm snakeForm = new SnakeForm();
-
-        static int playerX = 140;
-        static int playerY = 40;
-
-        static int playerSpeed = 300;
-
-        static int foodX = default;
-        static int foodY = default;
-
-        static Clock clock = new Clock();
-        static float moveTime = 0.5f; // время задержки в секундах
-
-
-        static void Main(string[] args)
-        {            
-            rw.Closed += (s, e) => rw.Close();
+            InitializeGrid();
+            Random rnd = new Random();
+            int ranfFoodCoord = rnd.Next(coord.Count+1);
+            food = new Food(coord);
+            clock = new Clock();
             
-            HashSet<float[]> coord = new HashSet<float[]>();
-            int cellSize = 20;
-
-            int gridWidth = (int)((wndSize.Item1 - 200)/ cellSize);
-            int gridHeight = (int)(wndSize.Item2 / cellSize);
-
-            for (int i = 0; i < gridHeight; i++)
+            // Основной цикл игры
+            while (window.IsOpen)
             {
-                for (int j = 0; j < gridWidth; j++)
-                {
-                    float centerX = (j * cellSize) + (cellSize / 2);
-                    float centerY = (i * cellSize) + (cellSize / 2);
-                    float[] coordinate = new float[] { centerX, centerY };
-                    coord.Add(coordinate);
-                }
-            }
-
-            snakeForm.InitializeSnake(playerX,playerY);
-            bool isGameOver = false;
-            while (rw.IsOpen)
-            {
-                rw.DispatchEvents();
-                rw.Clear(new Color(200, 200, 200));
-
-                //if (isGameOver)
-                //{
-                    SnakeMove();
-                    food.FoodSpawn(rw, coord, snakeForm.snake);
-                    food.CheckCollision(rw, coord, snakeForm.snake);
-                    //CheckFoodCollision();
-                    //CheckSelfCollision();
-                //}
-
-                DrawLine(rw);
-                snakeForm.DrawSnake(rw);
-
-                
-                
-                //snakeForm.SnakeMove();
-
-                rw.Display();
+                ProcessEvents();
+                Update();
+                Draw();
             }
         }
-        static void DrawLine(RenderWindow rw)
+
+        private static void ProcessEvents()
+        {
+            window.DispatchEvents();
+            if (Keyboard.IsKeyPressed(Keyboard.Key.W)) snake.ChangeDirection(Direction.Up);
+            if (Keyboard.IsKeyPressed(Keyboard.Key.S)) snake.ChangeDirection(Direction.Down);
+            if (Keyboard.IsKeyPressed(Keyboard.Key.A)) snake.ChangeDirection(Direction.Left);
+            if (Keyboard.IsKeyPressed(Keyboard.Key.D)) snake.ChangeDirection(Direction.Right);
+        }
+
+        private static void Update()
+        {
+            if (clock.ElapsedTime.AsMilliseconds() > speed) // Скорость игры
+            {
+                snake.Move(window);
+
+                if (snake.Head.shape.GetGlobalBounds().Intersects(food.FoodShape.GetGlobalBounds()))
+                {
+                    snake.Grow();
+                    food.Respawn(snake.GetBodyPositions(), coord);
+                    speed -= 20;
+                    scores++;
+                }
+
+                if (snake.CheckCollision())
+                {
+                    snake.pase = 0;
+                    
+                    if (scores > record)
+                    {
+                        record = scores;
+                    }
+                }
+
+                clock.Restart();
+            }
+
+            // проверяем нажатие кнопки на каждом обновлении
+            restartBttn.Update(Color.Red);
+        }
+
+        private static void Draw()
+        {
+            window.Clear(SFML.Graphics.Color.Black);
+            snake.Draw(window);
+            window.Draw(food.FoodShape);
+            textController.ShowScore(scores, record);
+            window.Draw(restartBttn._shape);
+            DrawLine();
+            restartBttn.DrawRestartBttn();
+            window.Display();
+        }
+        private static void DrawLine()
         {
             RectangleShape line = new RectangleShape();
+            line.Position = new Vector2f(400, 0);
+            line.Size = new Vector2f(10, window.Size.Y);
             line.FillColor = Color.White;
-            line.Position = new Vector2f(wndSize.Item1 - 200, 0);
-            line.Size = new Vector2f(10, wndSize.Item2);
-            rw.Draw(line);
+            window.Draw(line);
         }
-        static void SnakeMove()
+
+
+        private static void InitializeGrid()
         {
-            int pase = 20;
-            Vector2f previousHeadPosition = snakeForm.snake[0].shape.Position; // Сохранение позиции головы
-
-            // Изменение направления в зависимости от нажатой клавиши
-            if (Keyboard.IsKeyPressed(Keyboard.Key.W) && direction != Directions.Down)
+            for (int x = 0; x < 400; x += 20)
             {
-                direction = Directions.Up;
-            }
-            else if (Keyboard.IsKeyPressed(Keyboard.Key.S) && direction != Directions.Up)
-            {
-                direction = Directions.Down;
-            }
-            else if (Keyboard.IsKeyPressed(Keyboard.Key.A) && direction != Directions.Right)
-            {
-                direction = Directions.Left;
-            }
-            else if (Keyboard.IsKeyPressed(Keyboard.Key.D) && direction != Directions.Left)
-            {
-                direction = Directions.Right;
-            }
-
-            if (clock.ElapsedTime.AsSeconds() >= moveTime)
-            {
-                clock.Restart();
-
-                // Обновление позиции головы в зависимости от направления
-                switch (direction)
+                for (int y = 0; y < 400; y += 20)
                 {
-                    case Directions.Up:
-                        playerY -= pase;
-                        break;
-                    case Directions.Down:
-                        playerY += pase;
-                        break;
-                    case Directions.Left:
-                        playerX -= pase;
-                        break;
-                    case Directions.Right:
-                        playerX += pase;
-                        break;
-                }
-
-                // Обновление позиции головы
-                snakeForm.snake[0].shape.Position = new Vector2f(playerX, playerY);
-
-                // Обновление позиции тела змейки
-                for (int i = 1; i < snakeForm.snake.Count; i++)
-                {
-                    Vector2f temp = snakeForm.snake[i].shape.Position; // Сохранение текущей позиции элемента
-                    if (snakeForm.snake[i] is SnakeBody)
-                    {
-                        snakeForm.snake[i].shape.Position = new Vector2f(previousHeadPosition.X + 4, previousHeadPosition.Y + 4); // Перенос позиции на текущий элемент
-                    }
-                    else if (snakeForm.snake[i] is SnakeTail)
-                    {
-                        snakeForm.snake[i].shape.Position = new Vector2f(previousHeadPosition.X + 6, previousHeadPosition.Y + 6); // Перенос позиции на текущий элемент
-                    }
-                    else
-                    {
-                        snakeForm.snake[i].shape.Position = previousHeadPosition; // Перенос позиции предыдущей на текущий элемент
-                    }
-                    previousHeadPosition = temp; // Обновление для следующего элемента
+                    coord.Add(new Vector2f(x, y));
                 }
             }
+        }
+
+        private static void RestartGame()
+        {
+            scores = 0;
+            speed = 400.0f; 
+            snake = new Snake(110, 110); 
+            food = new Food(coord);
+            clock.Restart(); 
+            Console.WriteLine("Restart");
         }
     }
 }
+
+
+
