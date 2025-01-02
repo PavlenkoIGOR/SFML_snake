@@ -148,22 +148,20 @@ namespace SFML_snake.SnakeLogic
 
 
 /*// если нужно условие для проверки столкновения с рамкой
- *         public bool CheckBoundaryCollision(RenderWindow rw)
+        public bool CheckBoundaryCollision(RenderWindow rw)
         {
-            // Получаем размеры окна
             int windowWidth = (int)rw.Size.X-200;
             int windowHeight = (int)rw.Size.Y;
 
-            // Получаем позицию головы змейки
             Vector2f headPosition = Head.shape.Position;
 
             // Проверяем, находится ли голова за пределами границ окна
             if (headPosition.X - Head.shape.Radius < 0 || headPosition.X >= windowWidth ||
                 headPosition.Y - Head.shape.Radius < 0 || headPosition.Y >= windowHeight)
             {
-                return true; // Пересечение с границами произошло
+                return true;
             }
 
-            return false; // Нет пересечения
+            return false;
         }
 */
