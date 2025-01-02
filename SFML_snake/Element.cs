@@ -11,7 +11,7 @@ namespace SFML_snake
         {
             shape = new CircleShape();            
             shape.Origin = new Vector2f(shape.Radius, shape.Radius);
-            shape.Position = new Vector2f(xx - shape.Radius, yy - shape.Radius);
+            shape.Position = new Vector2f(xx, yy);
         }
         internal virtual void DrawElement(RenderWindow rw)
         {

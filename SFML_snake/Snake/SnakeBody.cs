@@ -1,4 +1,5 @@
 ﻿using SFML.Graphics;
+using System.Xml.Schema;
 
 namespace SFML_snake.Snake
 {
@@ -10,6 +11,7 @@ namespace SFML_snake.Snake
         }
         internal override void DrawElement(RenderWindow rw)
         {
+            //shape.Position = new SFML.System.Vector2f(shape.Position.X, shape.Position.Y);
             shape.FillColor = Color.Black;
             rw.Draw(shape);
         }
